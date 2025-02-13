@@ -1,6 +1,7 @@
 const gameContainer = document.getElementById("game-container");
 const player = document.getElementById("player");
 const scoreDisplay = document.getElementById("score");
+const restartButton = document.getElementById("restart-button");
 
 const gameWidth = 400;
 const gameHeight = 600;
@@ -8,13 +9,14 @@ const playerSize = 20;
 const laserWidth = 20;
 const laserHeight = 50;
 const playerSpeed = 20;
-const laserSpeed = 5;
-const spawnInterval = 800; // milliseconds
 
 let playerX = gameWidth / 2 - playerSize / 2;
 let score = 0;
 let lasers = [];
 let gameOver = false;
+let laserSpeed = 5; // Increases over time
+let spawnInterval = 800; // Decreases over time
+let gameLoop, laserInterval;
 
 // Move player with arrow keys
 document.addEventListener("keydown", (event) => {
@@ -71,20 +73,49 @@ function updateGame() {
         }
     });
 
-    // Increase score
+    // Increase score and difficulty over time
     score++;
     scoreDisplay.innerText = "Score: " + score;
 
-    requestAnimationFrame(updateGame);
+    if (score % 100 === 0) {
+        laserSpeed += 1; // Increase laser speed
+        spawnInterval = Math.max(300, spawnInterval - 50); // Decrease spawn time, minimum 300ms
+
+        clearInterval(laserInterval);
+        laserInterval = setInterval(createLaser, spawnInterval);
+    }
+
+    gameLoop = requestAnimationFrame(updateGame);
 }
 
 // Function to end the game
 function endGame() {
     gameOver = true;
     scoreDisplay.innerText = "Game Over! Score: " + score;
+    restartButton.style.display = "block"; // Show restart button
+
     clearInterval(laserInterval);
+    cancelAnimationFrame(gameLoop);
 }
 
-// Start game loop and laser spawning
-const laserInterval = setInterval(createLaser, spawnInterval);
+// Function to restart the game
+function restartGame() {
+    gameOver = false;
+    score = 0;
+    laserSpeed = 5;
+    spawnInterval = 800;
+    lasers.forEach(laser => gameContainer.removeChild(laser));
+    lasers = [];
+    playerX = gameWidth / 2 - playerSize / 2;
+    player.style.left = playerX + "px";
+    scoreDisplay.innerText = "Score: 0";
+    restartButton.style.display = "none";
+
+    // Restart game loop and lasers
+    laserInterval = setInterval(createLaser, spawnInterval);
+    updateGame();
+}
+
+// Start game loop
+laserInterval = setInterval(createLaser, spawnInterval);
 updateGame();
